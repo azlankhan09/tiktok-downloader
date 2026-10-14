@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Downloader — No Watermark</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1e26; --accent:#fe2c55; --text:#f1f1f1; --muted:#9aa0ae; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px; }
+  .wrap { width:100%; max-width:520px; }
+  h1 { font-size:26px; text-align:center; margin:12px 0 4px; }
+  h1 span { color:var(--accent); }
+  .sub { text-align:center; color:var(--muted); font-size:14px; margin-bottom:24px; }
+  .box { background:var(--card); border-radius:16px; padding:20px; }
+  input[type=text] { width:100%; padding:14px; border-radius:12px; border:1px solid #333a48; background:#0f1115; color:var(--text); font-size:15px; outline:none; }
+  input[type=text]:focus { border-color:var(--accent); }
+  button { width:100%; margin-top:12px; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:16px; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .spinner { display:none; text-align:center; margin:20px 0; }
+  .spinner.on { display:block; }
+  .ring { width:36px; height:36px; margin:0 auto; border:4px solid #333a48; border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .error { display:none; background:#3a1d24; border:1px solid var(--accent); color:#ffb3c1; border-radius:12px; padding:12px 14px; margin-top:14px; font-size:14px; }
+  .error.on { display:block; }
+  .preview { display:none; margin-top:18px; background:var(--card); border-radius:16px; overflow:hidden; }
+  .preview.on { display:block; }
+  .preview img { width:100%; max-height:300px; object-fit:cover; display:block; background:#000; }
+  .preview .meta { padding:16px; }
+  .preview .title { font-weight:700; font-size:15px; margin-bottom:6px; }
+  .preview .by { color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .dl { display:block; text-align:center; text-decoration:none; background:#25d366; color:#06281a; font-weight:800; padding:14px; border-radius:12px; }
+  .qlabel { font-size:13px; color:var(--muted); margin:14px 0 8px; text-align:center; }
+  .qgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .qbtn { display:block; text-align:center; text-decoration:none; background:#232936; color:var(--text); font-weight:700; padding:13px 8px; border-radius:12px; border:1px solid #333a48; font-size:14px; }
+  .qbtn small { display:block; font-weight:400; color:var(--muted); font-size:11px; margin-top:2px; }
+  .qbtn.hd { background:#25d366; color:#06281a; border:none; }
+  .qbtn.hd small { color:#06281a; opacity:.7; }
+  .steps { margin-top:26px; color:var(--muted); font-size:13px; line-height:1.9; }
+  .steps b { color:var(--text); }
+  .contact { margin-top:22px; background:var(--card); border-radius:16px; padding:18px; }
+  .contact a { display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--text); }
+  .wa-icon { flex-shrink:0; width:48px; height:48px; border-radius:50%; background:#25d366; display:flex; align-items:center; justify-content:center; }
+  .wa-icon svg { width:28px; height:28px; fill:#fff; }
+  .contact .ctitle { font-weight:800; font-size:15px; }
+  .contact .cnum { color:#25d366; font-size:14px; font-weight:700; margin-top:2px; }
+  footer { margin-top:28px; text-align:center; color:var(--muted); font-size:12px; max-width:520px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TikTok <span>Downloader</span></h1>
+  <p class="sub">Download any public TikTok video — no watermark, free.</p>
+
+  <div class="box">
+    <input id="url" type="text" placeholder="Paste TikTok video link here…" autocomplete="off">
+    <button id="go">Get Video</button>
+  </div>
+
+  <div class="spinner" id="spinner"><div class="ring"></div><p style="color:var(--muted);font-size:13px;margin-top:10px">Fetching video…</p></div>
+  <div class="error" id="error"></div>
+
+  <div class="preview" id="preview">
+    <img id="thumb" alt="video thumbnail">
+    <div class="meta">
+      <div class="title" id="vtitle"></div>
+      <div class="by" id="vby"></div>
+      <div class="qlabel">Choose quality — no watermark on any</div>
+      <div class="qgrid">
+        <a class="qbtn hd" id="q_hd" href="#">HD<small>best quality</small></a>
+        <a class="qbtn" id="q_360" href="#">360p<small>medium</small></a>
+        <a class="qbtn" id="q_240" href="#">240p<small>small file</small></a>
+        <a class="qbtn" id="q_144" href="#">144p<small>tiny file</small></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <b>How it works:</b><br>
+    1. Paste a TikTok video link above.<br>
+    2. We fetch a preview (thumbnail + title).<br>
+    3. Hit download — you get the MP4 with no watermark.
+  </div>
+
+  <div class="contact">
+    <a href="https://wa.me/923474421152" target="_blank" rel="noopener">
+      <span class="wa-icon">
+        <svg viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.3 82.4-183.8 183.8-183.8 49.1 0 95.2 19.1 129.9 53.8 34.7 34.7 53.8 80.8 53.8 129.9 0 101.3-82.5 183.8-183.9 183.8zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-32.3 1.9-4.2.9-7.7-1.4-10.7-2.3-3.1-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.8 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
+      </span>
+      <span>
+        <div class="ctitle">Want any website made? Contact me!</div>
+        <div class="cnum">WhatsApp: +92 3474421152</div>
+      </span>
+    </a>
+  </div>
+</div>
+
+<footer>
+  Made by <b style="color:var(--text)">Azlan Khan</b><br><br>
+  Only public videos can be downloaded. This tool is for personal use —
+  please respect creators and don't re-upload other people's content as your own.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function showError(msg) {
+  const e = $('error');
+  e.textContent = msg;
+  e.classList.add('on');
+}
+function clearError() { $('error').classList.remove('on'); }
+
+$('go').addEventListener('click', async () => {
+  const raw = $('url').value.trim();
+  clearError();
+  $('preview').classList.remove('on');
+  if (!raw) { showError('Please paste a TikTok video link first.'); return; }
+
+  $('go').disabled = true;
+  $('spinner').classList.add('on');
+
+  try {
+    const res = await fetch('/api/info?url=' + encodeURIComponent(raw));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // Backend sends friendly messages in `detail`.
+      showError(data.detail || 'Something went wrong. Try again.');
+      return;
+    }
+    // Preview card
+    $('thumb').src = data.thumbnail || '';
+    $('vtitle').textContent = data.title || 'TikTok video';
+    const dur = data.duration ? ' • ' + Math.round(data.duration) + 's' : '';
+    $('vby').textContent = '@' + (data.author || 'unknown') + dur;
+    // 4 quality options — no watermark on any of them
+    const dlbase = '/api/download?url=' + encodeURIComponent(raw) + '&quality=';
+    $('q_hd').href = dlbase + 'hd';
+    $('q_360').href = dlbase + '360';
+    $('q_240').href = dlbase + '240';
+    $('q_144').href = dlbase + '144';
+    $('preview').classList.add('on');
+  } catch (err) {
+    showError('Could not reach the server. Check your connection and try again.');
+  } finally {
+    $('go').disabled = false;
+    $('spinner').classList.remove('on');
+  }
+});
+
+// Let Enter key trigger the button.
+$('url').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+
+// Shareable links: ?url=<tiktok link> auto-loads the video on page open.
+(function () {
+  try {
+    const q = new URLSearchParams(location.search).get('url');
+    if (q) { $('url').value = q; $('go').click(); }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>
