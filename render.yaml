@@ -1,0 +1,10 @@
+# Render Blueprint — one-click deploy of the TikTok downloader (free tier, no card)
+# In Render: New → Blueprint → connect this repo → Apply. That's it.
+services:
+  - type: web
+    name: tiktok-downloader
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    healthCheckPath: /api/health
