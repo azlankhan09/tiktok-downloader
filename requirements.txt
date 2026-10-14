@@ -1,0 +1,5 @@
+# Streamlit Cloud edition — free hosting, no credit card.
+# Main file: streamlit_app.py (set on share.streamlit.io when creating the app).
+streamlit
+yt-dlp
+imageio-ffmpeg
