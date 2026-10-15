@@ -18,6 +18,7 @@ import urllib.parse
 from pathlib import Path
 
 import imageio_ffmpeg
+import requests
 import streamlit as st
 import yt_dlp
 
@@ -31,6 +32,14 @@ ALLOWED_TIKTOK_HOSTS = {
     "m.tiktok.com",
     "vt.tiktok.com",
     "vm.tiktok.com",
+}
+
+# URL shorteners people share TikTok links through (e.g. tt.site).
+# We resolve them server-side and only proceed if they land on a real
+# tiktok.com video URL — anything else is still rejected.
+SHORTENER_HOSTS = {
+    "tt.site",
+    "www.tt.site",
 }
 
 MAX_FILESIZE_BYTES = 100 * 1024 * 1024  # ~100 MB per video
@@ -59,7 +68,32 @@ WHATSAPP_NUMBER = "923474421152"  # +92 3474421152
 # Helpers (same logic as backend/main.py)
 # ---------------------------------------------------------------------------
 
-def validate_tiktok_url(raw: str) -> str:
+def resolve_short_url(raw: str) -> str:
+    """Follow redirects for known shorteners; return the final URL."""
+    try:
+        resp = requests.head(
+            raw, allow_redirects=True, timeout=15,
+            headers={"User-Agent": BROWSER_UA},
+        )
+        final = resp.url
+        if not final or final.rstrip("/") == raw.rstrip("/"):
+            # Some shorteners don't answer HEAD properly — try GET.
+            resp = requests.get(
+                raw, allow_redirects=True, timeout=15,
+                headers={"User-Agent": BROWSER_UA}, stream=True,
+            )
+            final = resp.url
+            resp.close()
+        if not final:
+            raise ValueError("That short link didn't lead anywhere.")
+        return final
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError(f"Could not open that short link: {exc}")
+
+
+def validate_tiktok_url(raw: str, _depth: int = 0) -> str:
     """Accept only https TikTok video/share links. Returns cleaned URL or raises."""
     if not raw or len(raw) > 2048:
         raise ValueError("Please paste a TikTok video link.")
@@ -67,8 +101,15 @@ def validate_tiktok_url(raw: str) -> str:
     if parsed.scheme != "https":
         raise ValueError("Link must start with https://")
     host = parsed.netloc.lower().split(":")[0]
+    if (host in SHORTENER_HOSTS or host.endswith(".tt.site")) and _depth == 0:
+        # Short link (e.g. tt.site) — resolve it, then re-validate the target.
+        resolved = resolve_short_url(parsed.geturl())
+        return validate_tiktok_url(resolved, _depth=1)
     if host not in ALLOWED_TIKTOK_HOSTS and not host.endswith(".tiktok.com"):
-        raise ValueError("Only TikTok links are supported (tiktok.com, vt.tiktok.com, vm.tiktok.com).")
+        raise ValueError(
+            "Only TikTok links are supported "
+            "(tiktok.com, vt.tiktok.com, vm.tiktok.com, tt.site)."
+        )
     if not parsed.path or parsed.path == "/":
         raise ValueError("That doesn't look like a video link.")
     return parsed.geturl()
